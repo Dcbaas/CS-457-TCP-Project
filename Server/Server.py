@@ -19,9 +19,15 @@ class Server:
         self.socketList.append(sys.stdin)
         return
 
+    def addUser(self, packet):
+        data = packet.split(':', 1)
+        if data[0] == 'username':
+            self.users.append(data[1])
+            return True
+        return False
+
     def runServer(self): 
         while True:
-#            print('throwaway')
             readyToRead, readyToWrite, hasError = \
                     select.select(
                             self.socketList, 
@@ -30,7 +36,7 @@ class Server:
             if self.serversocket in readyToRead:
                 # A new connection established adding it to the list of sockets
                 (clientSocket, clientAddress) = self.serversocket.accept()
-                socketList.append(clientSocket)
+                self.socketList.append(clientSocket)
                 self.socketIpMapping.update({clientAddress: clientSocket})
             elif sys.stdin in readyToRead:
                 #do stuff
@@ -43,14 +49,19 @@ class Server:
                 for socket in readyToRead:
                     messgBuffer = []
                     #source username (16 + dest. username (16) + 255 char messg = 287
-                    mssgLen = socket.recv(289)
-                    mssgSrc,mssgDest,text = splitPacket(messgBuffer)
+                    messgBuffer = socket.recv(289)
+                    messgBuffer = messgBuffer.decode()
+                    result = self.addUser(messgBuffer)
+                    if result == True:
+                        continue
+
+                    mssgSrc,mssgDest,text = self.splitPacket(messgBuffer)
 
                     if mssgDest == 'allchat':
                         #dostuff
                         print('do allchat stuff')
                     else:
-                        destIP = findUserIp(mssgDest)
+                        destIP = self.findUserIp(mssgDest)
 
                         if destIP == False:
                             #return error to source and contiune
@@ -59,19 +70,12 @@ class Server:
                             destSocket = socketIpMapping[destIP]
                             destSocket.send(messgBuffer)
 
-
-
-
     def splitPacket(self, packet):
         message = packet.split(':')
         sourceUser = message[0]
         destUser = message[1]
-        text = message[3]
+        text = message[2]
         return sourceUser, destUser, text
-
-    #DEPRICATED AFTER NO USE
-    def constructPacket(self, source,dest,text):
-        return str(source + ':' + dest + ':' + text)
 
     def allChatMessg(self, packet, socketList):
         return

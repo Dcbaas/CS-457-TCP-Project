@@ -18,28 +18,30 @@ class Client:
         if self.username == '':
             self.username = input("Enter your username: ")
 
+        usermessage = str('username:' + self.username)
+        self.clientSocket.send(usermessage.encode())
+
         self.inputList = []
-        self.inputList.append(self.clientSocket);
+        self.inputList.append(self.clientSocket)
+        self.inputList.append(sys.stdin)
 
         self.activeUsers = []
         return
 
     def runClient(self):
-        inputGiven = False
-        inputGiven = async_to_sync(detectUserInput)()
-
         while True:
             readyToRead, readyToWrite, inError = \
-                     select.select(inputList, inputList, inputList)
+                     select.select(self.inputList, self.inputList, self.inputList)
 
             if self.clientSocket in readyToRead:
-                message = clientSocket.recv(289)
-                handleMessage(message)
+                message = self.clientSocket.recv(289)
+                self.handleMessage(message)
 
-            if inputGiven == True:
-                inputGiven = False
-                sendMessage()
-                inputGiven = async_to_sync(detectUserInput)()
+            elif sys.stdin in readyToRead:
+                for line in sys.stdin:
+                    self.sendMessage(line)
+                    break
+                sys.stdout.flush()
 
     def handleMessage(self, packet):
         source, dest, message = splitPacket(packet)
@@ -72,16 +74,15 @@ class Client:
         return
 
 
-    def sendMessage(self):
-        raw_messsage = input(self.username + ': ')
-        detail = raw_messsage.split(' ', 1)
+    def sendMessage(self, rawMessage):
+        detail = rawMessage.split(' ', 1)
         packet = ''
 
         if detail[0] == '!private':
             dest_messae_pair = detail[1].split(' ', 1)
             packet = constructPacket(dest_messae_pair[0], dest_messae_pair[1])
         elif detail[0] == '!all':
-            packet = constructPacket('allchat', detail[1])
+            packet = self.constructPacket('allchat', detail[1])
 
         elif detail[0] == '!list':
             packet = str(username + ':list')
@@ -93,7 +94,8 @@ class Client:
             print('Not a valid command')
 
         if len(packet) <= 289:
-            clientSocket.send(packet)
+
+            self.clientSocket.send(packet.encode())
         else:
             print('Message too long')
 
@@ -109,6 +111,7 @@ class Client:
     def constructPacket(self, dest, message):
         return str(self.username +':' + dest + ':' + message)
 
+    #DEPRICATED 
     async def detectUserInput(self):
         ch = readchar.readchar()
         if ch == '/':
