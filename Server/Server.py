@@ -59,6 +59,12 @@ class Server:
                         print('User added')
                         continue
 
+                    listReturn = self.listRequest(messgBuffer)
+                    if listReturn != None:
+                        print(listReturn)
+                        socket.send(listReturn.encode())
+                        continue
+
                     mssgSrc,mssgDest,text = self.splitPacket(messgBuffer)
 
                     if mssgDest == 'allchat':
@@ -82,6 +88,15 @@ class Server:
         destUser = message[1]
         text = message[2]
         return sourceUser, destUser, text
+
+    def listRequest(self, packet):
+        data = packet.split(':', 1)
+        print(data)
+        if data[1] == 'list':
+            returnList ='Server:' + 'list:' + ''.join(str(user + ':') for user in self.users)
+            print(returnList)
+            return returnList
+        return None
 
     def allChatMessg(self, packet, socketList):
         return

@@ -36,6 +36,7 @@ class Client:
             if self.clientSocket in readyToRead:
                 message = self.clientSocket.recv(289)
                 message = message.decode()
+                print(message)
                 self.handleMessage(message)
 
             elif sys.stdin in readyToRead:
