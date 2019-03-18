@@ -11,7 +11,7 @@ class Server:
         self.users = []
 
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.serversocket.bind((socket.gethostname(), portNum))
+        self.serversocket.bind(('', portNum))
         self.serversocket.listen(15)
         self.socketList.append(self.serversocket)
 
@@ -21,6 +21,7 @@ class Server:
 
     def runServer(self): 
         while True:
+#            print('throwaway')
             readyToRead, readyToWrite, hasError = \
                     select.select(
                             self.socketList, 
@@ -28,7 +29,7 @@ class Server:
                             self.socketList)
             if self.serversocket in readyToRead:
                 # A new connection established adding it to the list of sockets
-                (clientSocket, clientAddress) = serversocket.accept()
+                (clientSocket, clientAddress) = self.serversocket.accept()
                 socketList.append(clientSocket)
                 self.socketIpMapping.update({clientAddress: clientSocket})
             elif sys.stdin in readyToRead:
