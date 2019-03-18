@@ -81,7 +81,7 @@ class Client:
 
         if detail[0] == '!private':
             dest_messae_pair = detail[1].split(' ', 1)
-            packet = constructPacket(dest_messae_pair[0], dest_messae_pair[1])
+            packet = self.constructPacket(dest_messae_pair[0], dest_messae_pair[1])
         elif detail[0] == '!all':
             packet = self.constructPacket('allchat', detail[1])
 
