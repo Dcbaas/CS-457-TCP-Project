@@ -1,6 +1,8 @@
 import socket
 import select
 import sys
+import readchar
+import asyncio
 
 class Client:
     def __init__(self, ipAddress, portNum = 8008, username = ''):
@@ -18,43 +20,35 @@ class Client:
 
         self.inputList = []
         self.inputList.append(self.clientSocket);
-        self.inputList.append(sys.stdin)
         return
 
     def runClient():
-        readyToRead, readyToWrite, inError = \
-                select.select(inputList, inputList, inputList)
+        inputGiven = False
+        inputGiven = await detectUserInput()
 
-        if self.clientSocket in readyToRead:
-           message = clientSocket.recv(289)
-           printMessage(message)
-       elif sys.stdin in readyToRead:
-           for line in sys.stdin:
-               if line[0] == '/':
-                   if line[1]: == 'list':
-                       #make a list command
-                       continue
-                   else:
-                       #make a DM for the person specified
-                       packet = composeDirectMessage(line)
-                       if len(packet) <= 289:
-                           self.clientSocket.send(packet)
-                       else:
-                           print('Message too long. Was not sent')
+        while True:
+            readyToRead, readyToWrite, inError = \
+                     select.select(inputList, inputList, inputList)
+
+            if self.clientSocket in readyToRead:
+                message = clientSocket.recv(289)
+                printMessage(message)
+
+            if inputGiven == True:
+                inputGiven = False
+                sendMessage()
+                inputGiven = await detectUserInput()
 
 
-    def printMessage(message):
-        messageList = message.split(':', 2)
-        #Print the user list if that was the message
-        if messageList[0] == 'userlist':
-            displayList(messageList)
-            return
-        #print an all chat message
-        elif messagelist[1] == 'allchat':
-            print(str(messagelist[0] + '(in public chat)' + messagelist[2]))
-        #print a normal message
+        return
+
+    def handleMessage(packet):
+        source, dest, message = splitPacket(packet)
+
+        if source = 'list':
+            displayList(message)
         else:
-            print(str(messageList[0] + ':' + messageList[2]))
+            _printMessage(source, dest, message)
         return
 
     def composeDirectMessage(line):
@@ -62,5 +56,40 @@ class Client:
         return str(self.username + ':' + messageDetail[0] + ':' + messageDetail[1])
 
     def displayList(userList):
+        print(Users:)
+        for user in userList:
+            print(userList)
         return
+
+    def _printMessage(source, dest, message):
+        '''
+        Prints a standard message to the screen. If its a public message, the print statement marks
+        the message as such 
+
+        
+        '''
+        if dest == 'allchat':
+            print(str(source + ' (Public):' + message)) 
+        else:
+            print(str(source + ': ' + message))
+        return
+
+
+    def sendMessage():
+        #TODO
+        return
+
+    def splitPacket(packet):
+        rawList = packet.split(":", 2)
+        source = rawList[0]
+        dest = rawList[1]
+        detail = rawList[2]
+        return source, dest, detail
+
+    async def detectUserInput():
+        ch = readchar.readchar()
+        if ch == '/':
+            return True
+
+        return False
 
