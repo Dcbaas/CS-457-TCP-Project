@@ -51,8 +51,8 @@ class Server:
                     #source username (16 + dest. username (16) + 255 char messg = 287
                     messgBuffer = socket.recv(289)
                     messgBuffer = messgBuffer.decode()
-                    result = self.addUser(messgBuffer)
-                    if result == True:
+                    if self.addUser(messgBuffer):
+                        print('User added')
                         continue
 
                     mssgSrc,mssgDest,text = self.splitPacket(messgBuffer)
