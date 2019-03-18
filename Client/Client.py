@@ -89,7 +89,7 @@ class Client:
             packet = str(self.username + ':list')
 
         elif detail[0] == '!quit':
-            quitProgram()
+            self.quitProgram()
 
         else:
             print('Not a valid command')
@@ -121,7 +121,7 @@ class Client:
         return False
 
     def quitProgram(self):
-        clientSocket.shutdown()
-        clientSocket.close()
+        self.clientSocket.shutdown(socket.SHUT_RDWR)
+        self.clientSocket.close()
         exit(0)
 
