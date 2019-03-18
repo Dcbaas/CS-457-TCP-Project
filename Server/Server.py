@@ -18,7 +18,7 @@ class Server:
         #add stdin to the list for its use
         self.socketList.append(sys.stdin)
         return
-    
+
     def runServer(self): 
         while True:
             readyToRead, readyToWrite, hasError = \
@@ -67,7 +67,7 @@ class Server:
         destUser = message[1]
         text = message[3]
         return sourceUser, destUser, text
-    
+
     #DEPRICATED AFTER NO USE
     def constructPacket(self, source,dest,text):
         return str(source + ':' + dest + ':' + text)

@@ -1,4 +1,3 @@
-from enum import Enum
 import socket
 import select
 import sys
@@ -28,18 +27,40 @@ class Client:
 
         if self.clientSocket in readyToRead:
            message = clientSocket.recv(289)
-           #TODO implement the rest of this method
+           printMessage(message)
+       elif sys.stdin in readyToRead:
+           for line in sys.stdin:
+               if line[0] == '/':
+                   if line[1]: == 'list':
+                       #make a list command
+                       continue
+                   else:
+                       #make a DM for the person specified
+                       packet = composeDirectMessage(line)
+                       if len(packet) <= 289:
+                           self.clientSocket.send(packet)
+                       else:
+                           print('Message too long. Was not sent')
 
 
     def printMessage(message):
         messageList = message.split(':', 2)
-        if messageList[1] == 'allchat':
-            print(str(messageList[0] + '(In public chat)' + messageList[2]))
+        #Print the user list if that was the message
+        if messageList[0] == 'userlist':
+            displayList(messageList)
+            return
+        #print an all chat message
+        elif messagelist[1] == 'allchat':
+            print(str(messagelist[0] + '(in public chat)' + messagelist[2]))
+        #print a normal message
         else:
             print(str(messageList[0] + ':' + messageList[2]))
         return
 
+    def composeDirectMessage(line):
+        messageDetail = line[1]:.split(' ', 1)
+        return str(self.username + ':' + messageDetail[0] + ':' + messageDetail[1])
 
-class Command(Enum):
-    LIST_USERS = '/list'
-    EXIT = '/exit'
+    def displayList(userList):
+        return
+
