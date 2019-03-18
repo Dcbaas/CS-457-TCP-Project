@@ -86,7 +86,7 @@ class Client:
             packet = self.constructPacket('allchat', detail[1])
 
         elif detail[0] == '!list':
-            packet = str(username + ':list')
+            packet = str(self.username + ':list')
 
         elif detail[0] == '!quit':
             quitProgram()

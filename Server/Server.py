@@ -8,6 +8,7 @@ class Server:
     def __init__(self, portNum = 8008):
         self.socketList = []
         self.socketIpMapping = {}
+        self.socketUserMapping = {}
         self.users = []
 
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,10 +20,11 @@ class Server:
         self.socketList.append(sys.stdin)
         return
 
-    def addUser(self, packet):
+    def addUser(self, packet, socket):
         data = packet.split(':', 1)
         if data[0] == 'username':
             self.users.append(data[1])
+            self.socketUserMapping.update({data[1]: socket})
             return True
         return False
 
@@ -48,13 +50,12 @@ class Server:
             else:
                 for socket in readyToRead:
                     print('Got something')
-                    print(socket) 
                     messgBuffer = []
                     #source username (16 + dest. username (16) + 255 char messg = 287
                     messgBuffer = socket.recv(289)
                     messgBuffer = messgBuffer.decode()
 
-                    if self.addUser(messgBuffer):
+                    if self.addUser(messgBuffer, socket):
                         print('User added')
                         continue
 
@@ -68,14 +69,12 @@ class Server:
                                 dest.send(messgBuffer.encode())
 
                     else:
-                        destIP = self.findUserIp(mssgDest)
-
-                        if destIP == False:
-                            #return error to source and contiune
+                        if mssgDest in self.socketUserMapping:
+                            destSocket = self.socketUserMapping[mssgDest]
+                            destSocket.send(messgBuffer.encode())
+                        else:
+                            #Send an error cause it didn't exist
                             continue
-                        else: 
-                            destSocket = socketIpMapping[destIP]
-                            destSocket.send(messgBuffer)
 
     def splitPacket(self, packet):
         message = packet.split(':')
