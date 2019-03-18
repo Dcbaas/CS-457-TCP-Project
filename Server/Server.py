@@ -47,10 +47,13 @@ class Server:
                 sys.stdout.flush()
             else:
                 for socket in readyToRead:
+                    print('Got something')
+                    print(socket) 
                     messgBuffer = []
                     #source username (16 + dest. username (16) + 255 char messg = 287
                     messgBuffer = socket.recv(289)
                     messgBuffer = messgBuffer.decode()
+
                     if self.addUser(messgBuffer):
                         print('User added')
                         continue
@@ -58,8 +61,12 @@ class Server:
                     mssgSrc,mssgDest,text = self.splitPacket(messgBuffer)
 
                     if mssgDest == 'allchat':
-                        #dostuff
-                        print('do allchat stuff')
+                        #Broadcast to all but stdin and the sending socket
+                        for dest in readyToWrite:
+                            print('here1')
+                            if not dest == sys.stdin or dest == socket or dest == self.serversocket:
+                                dest.send(messgBuffer.encode())
+
                     else:
                         destIP = self.findUserIp(mssgDest)
 
@@ -85,4 +92,11 @@ class Server:
             if user.getUsername() == destUser:
                 return user.getIpAddress()
         return False
+
+    def quitServer(self):
+        for socket in self.socketList:
+            if socket == sys.stdin:
+                continue
+            else:
+                socket.close()
 

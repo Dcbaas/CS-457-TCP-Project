@@ -46,12 +46,12 @@ class Client:
                 sys.stdout.flush()
 
     def handleMessage(self, packet):
-        source, dest, message = splitPacket(packet)
+        source, dest, message = self.splitPacket(packet)
 
         if source == 'list':
-            displayList(message)
+            self.displayList(message)
         else:
-            _printMessage(source, dest, message)
+            self._printMessage(source, dest, message)
         return
 
     def composeDirectMessage(self, line):
