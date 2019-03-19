@@ -1,8 +1,6 @@
 import socket
 import select
 import sys
-import readchar
-import asyncio
 
 class Client:
     def __init__(self, ipAddress, portNum = 8008, username = ''):
@@ -64,7 +62,6 @@ class Client:
         print(len(userList))
 
         for user in userList:
-            print('here1')
             print(user)
         return
 

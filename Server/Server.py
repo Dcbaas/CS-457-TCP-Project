@@ -2,7 +2,6 @@ import sys
 import sys
 import socket
 import select
-import asyncio
 
 class Server:
     def __init__(self, portNum = 8008):
