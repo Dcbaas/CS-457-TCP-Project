@@ -45,7 +45,7 @@ class Server:
                     if line == '!list':
                         print(self.users)
                     elif line == '!quit':
-                        [currentSocket.close() for currentSocket in self.socketList]
+                        [self.shutdownSocket(currentSocket) for currentSocket in self.socketList]
                         exit(0)
                     break;
                 sys.stdout.flush()
@@ -86,6 +86,8 @@ class Server:
                             destSocket = self.socketUserMapping[mssgDest]
                             destSocket.send(messgBuffer.encode())
                         else:
+                            messgBuffer = 'Server:error:The person you are trying to contact is not connected to the server'
+                            socket.send(messgBuffer.encode())
                             #Send an error cause it didn't exist
                             continue
 
@@ -113,7 +115,7 @@ class Server:
 
     def manageSocket(self, socket, buffer):
         if len(buffer) == 0:
-            socket.close()
+            self.shutdownSocket(socket)
             #Remove the socket from the input list and the user:socket dictionary 
             self.socketList.remove(socket)
             for user, clientSocket in self.socketUserMapping.items():
@@ -122,6 +124,12 @@ class Server:
                     self.users.remove(user)
                     return True
         return False
+
+    def shutdownSocket(self, currentSocket):
+        if currentSocket != sys.stdin:
+            currentSocket.shutdown(socket.SHUT_RDWR)
+            currentSocket.close()
+        return
 
     def quitServer(self):
         for socket in self.socketList:

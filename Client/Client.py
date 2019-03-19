@@ -123,8 +123,7 @@ class Client:
 
     def manageClient(self, buffer):
         if len(buffer) == 0:
-            self.clientSocket.close()
-            exit(0)
+            self.quitProgram()
 
     def quitProgram(self):
         self.clientSocket.shutdown(socket.SHUT_RDWR)
