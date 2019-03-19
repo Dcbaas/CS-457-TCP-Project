@@ -51,8 +51,14 @@ class Server:
                 for socket in readyToRead:
                     print('Got something')
                     messgBuffer = []
-                    #source username (16 + dest. username (16) + 255 char messg = 287
+
+                    #source username (16 + dest. username (16) + 255 char messg  + 2 ':' = 287
                     messgBuffer = socket.recv(289)
+
+                    #Did the client close the connection? 
+                    if self.manageSocket(socket, messgBuffer):
+                        continue
+
                     messgBuffer = messgBuffer.decode()
 
                     if self.addUser(messgBuffer, socket):
@@ -105,6 +111,17 @@ class Server:
         for user in self.users:
             if user.getUsername() == destUser:
                 return user.getIpAddress()
+        return False
+
+    def manageSocket(self, socket, buffer):
+        if len(buffer) == 0:
+            socket.close()
+            #Remove the socket from the input list and the user:socket dictionary 
+            self.socketList.remove(socket)
+            for user, clientSocket in self.socketUserMapping.items():
+                if clientSocket == socket:
+                    del self.socketUserMapping[user]
+                    return True
         return False
 
     def quitServer(self):
