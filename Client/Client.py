@@ -48,7 +48,7 @@ class Client:
     def handleMessage(self, packet):
         source, dest, message = self.splitPacket(packet)
 
-        if source == 'list':
+        if dest == 'list':
             self.displayList(message)
         else:
             self._printMessage(source, dest, message)
@@ -61,6 +61,8 @@ class Client:
     def displayList(self, userList):
         print('Users:')
         userList = userList.split(':')
+        print(len(userList))
+
         for user in userList:
             print('here1')
             print(user)
