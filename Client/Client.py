@@ -39,6 +39,7 @@ class Client:
 
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
+                    line = line.strip()
                     self.sendMessage(line)
                     break
                 sys.stdout.flush()
@@ -59,8 +60,6 @@ class Client:
     def displayList(self, userList):
         print('Users:')
         userList = userList.split(':')
-        print(len(userList))
-
         for user in userList:
             print(user)
         return

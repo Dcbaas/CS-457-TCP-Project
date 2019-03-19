@@ -16,6 +16,6 @@ elif len(sys.argv) != 0:
     print('OR: ./clientMain.py')
     exit(1)
 
-client = Client.Client('localhost',8008, 'Dave')
+client = Client.Client(ipAddress,portNumber,username) 
 client.runClient()
 

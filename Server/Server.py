@@ -51,7 +51,7 @@ class Server:
                 sys.stdout.flush()
             else:
                 for socket in readyToRead:
-                    print('Got something')
+                    print('Incoming Message')
                     messgBuffer = []
 
                     #source username (16 + dest. username (16) + 255 char messg  + 2 ':' = 287
@@ -78,7 +78,6 @@ class Server:
                     if mssgDest == 'allchat':
                         #Broadcast to all but stdin and the sending socket
                         for dest in readyToWrite:
-                            print('here1')
                             if not dest == sys.stdin or dest == socket or dest == self.serversocket:
                                 dest.send(messgBuffer.encode())
 
@@ -120,6 +119,7 @@ class Server:
             for user, clientSocket in self.socketUserMapping.items():
                 if clientSocket == socket:
                     del self.socketUserMapping[user]
+                    self.users.remove(user)
                     return True
         return False
 
