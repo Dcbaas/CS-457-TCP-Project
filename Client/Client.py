@@ -35,8 +35,8 @@ class Client:
 
             if self.clientSocket in readyToRead:
                 message = self.clientSocket.recv(289)
+                self.manageClient(message)
                 message = message.decode()
-                print(message)
                 self.handleMessage(message)
 
             elif sys.stdin in readyToRead:
@@ -60,8 +60,10 @@ class Client:
 
     def displayList(self, userList):
         print('Users:')
+        userList = userList.split(':')
         for user in userList:
-            print(userList)
+            print('here1')
+            print(user)
         return
 
     def _printMessage(self, source, dest, message):
@@ -120,6 +122,11 @@ class Client:
             return True
 
         return False
+
+    def manageClient(self, buffer):
+        if len(buffer) == 0:
+            self.clientSocket.close()
+            exit(0)
 
     def quitProgram(self):
         self.clientSocket.shutdown(socket.SHUT_RDWR)

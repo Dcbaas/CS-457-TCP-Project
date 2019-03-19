@@ -1,6 +1,11 @@
 #!/usr/bin/env python
-
+import sys
 import Server
-server = Server.Server(8008)
+
+portNum = 8008
+if len(sys.argv) == 2:
+    portNum = int(sys.argv[1])
+
+server = Server.Server(portNum)
 server.runServer()
 

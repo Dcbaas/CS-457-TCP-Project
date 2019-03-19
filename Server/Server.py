@@ -41,11 +41,14 @@ class Server:
                 self.socketList.append(clientSocket)
                 self.socketIpMapping.update({clientAddress: clientSocket})
             elif sys.stdin in readyToRead:
-                #do stuff
-                print('Got message from stdin')
-                for i in sys.stdin:
-                    print('got ' + i)
-                    break
+                for line in sys.stdin:
+                    line = line.strip()
+                    if line == '!list':
+                        print(self.users)
+                    elif line == '!quit':
+                        [currentSocket.close() for currentSocket in self.socketList]
+                        exit(0)
+                    break;
                 sys.stdout.flush()
             else:
                 for socket in readyToRead:
@@ -103,9 +106,6 @@ class Server:
             print(returnList)
             return returnList
         return None
-
-    def allChatMessg(self, packet, socketList):
-        return
 
     def findUserIp(self, destUser):
         for user in self.users:
