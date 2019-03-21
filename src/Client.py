@@ -2,6 +2,8 @@ import socket
 import select
 import sys
 
+from Encrypt.EncryptClient import EncryptClient
+
 class Client:
     def __init__(self, ipAddress, portNum = 8008, username = ''):
         self.username = username
@@ -12,9 +14,6 @@ class Client:
             print("No connection found on host %s at port %s." % (ipAddress, portNum))
             self.clientSocket.close()
             exit()
-
-        if self.username == '':
-            self.username = input("Enter your username: ")
 
         usermessage = str('username:' + self.username)
         self.clientSocket.send(usermessage.encode())

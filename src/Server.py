@@ -3,6 +3,8 @@ import sys
 import socket
 import select
 
+from Encrypt.EncryptServer import EncryptServer
+
 class Server:
     def __init__(self, portNum = 8008):
         self.socketList = []
