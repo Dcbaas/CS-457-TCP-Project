@@ -14,9 +14,6 @@ class EncryptServer:
 
         self.sessionKey = None
 
-        self.rsaCipher = PKCS1_OAEP.new(self.privKey)
-        self.aesCipher = None
-
         pubFile.close()
         privFile.close()
         return
@@ -24,23 +21,27 @@ class EncryptServer:
     def rsaDecrypt(self, cipherText):
         """
         Will always use the private key of the server
-        cipherText (str): The text
         """
-        self.sessionKey = self.rsaCipher.decrypt(cipherText)
+        rsaCipher = PKCS1_OAEP.new(privKey)
+        self.sessionKey = rsaCipher.decrypt(cipherText)
         return
 
-    def encrypt(self, plainText, iv):
-        """
-        Will encrypt with the
-        """
-        return
+    def encrypt(self, plainText):
+        aesCipher = AES.new(self.sessionKey, AES.MODE_CBC)
+        byteText = Padding.pad(plainText.encode(), 16)
+        cipherText = aesCipher.encrypt(byteText)
+        return cipherText, aesCipher.iv
 
-    def decrypt(self, plainText, iv):
-        return
+
+    def decrypt(self, cipherText, iv):
+        aesCipher = AES.new(self.sessionKey, AES.MODE_CBC, iv=iv)
+        plainText = Padding.unpad(aesCipher.decrypt(cipherText),16).decode()
+        return plainText
+
 
     def getPublicKey():
         return self.pubKey
-    
+
     def getAESKey():
         return self.symKey
 

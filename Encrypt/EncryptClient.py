@@ -24,15 +24,11 @@ class EncryptClient:
     def encrypt(self, plainText):
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC)
         byteText = Padding.pad(plainText.encode(), 16)
-
         cipherText = aesCipher.encrypt(byteText)
-
         return cipherText, aesCipher.iv
 
     def decrypt(self, cipherText, iv):
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC, iv=iv)
         plainText = Padding.unpad(aesCipher.decrypt(cipherText),16).decode()
         return plainText
-
-
 
