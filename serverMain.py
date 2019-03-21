@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-import Server
+from ChatApp import Server
 
 portNum = 8008
 if len(sys.argv) == 2:
@@ -10,6 +10,6 @@ elif len(sys.argv) != 1:
     print('OR: ./serverMain.py')
     exit(1)
 
-server = Server.Server(portNum)
+server = Server(portNum)
 server.runServer()
 
