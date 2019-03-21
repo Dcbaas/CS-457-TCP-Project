@@ -1,2 +1,0 @@
-from .Message import Message
-
