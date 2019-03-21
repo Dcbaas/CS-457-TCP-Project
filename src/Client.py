@@ -15,6 +15,8 @@ class Client:
             self.clientSocket.close()
             exit()
 
+        self.encrypter = EncryptClient()
+
         usermessage = str('username:' + self.username)
         self.clientSocket.send(usermessage.encode())
 
@@ -42,6 +44,17 @@ class Client:
                     self.sendMessage(line)
                     break
                 sys.stdout.flush()
+    def runHandshake(self):
+        """
+        The handshake sets sends the server the AES key and the username it will be using while 
+        connected.
+        """
+        #Send the AES key
+        self.clientSocket.send(encrypter.getEncryptedAESKey())
+        usermessage = str('username:' + self.username)
+        
+        cipherMessage,iv = self.encrypter.encrypt(usermessage)
+        self.clientSocket.send(bytes(cipherMessage + iv))
 
     def handleMessage(self, packet):
         source, dest, message = self.splitPacket(packet)
@@ -94,8 +107,9 @@ class Client:
         else:
             print('Not a valid command')
 
-        if len(packet) <= 289:
+        if len(packet) <= 289
 
+            cipherMessage, iv = encrypter.encrypt(packet)
             self.clientSocket.send(packet.encode())
         else:
             print('Message too long')
