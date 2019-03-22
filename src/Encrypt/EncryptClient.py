@@ -5,30 +5,32 @@ from Crypto.Util import Padding
 
 class EncryptClient:
     def __init__(self):
-        self.publicKey= None
+        publicKeyFile = open('RSApub.pem')
         self.sessionKey = get_random_bytes(32)
 
-    def setPublicKey(self, publicKey):
-        self.publicKey = publicKey
+        self.publicKey = RSA.importKey(publicKeyFile.read())
         self.rsaCipher = PKCS1_OAEP.new(self.publicKey)
-        self._rsaEncrypt()
-        return
-
-    def _rsaEncrypt(self):
-        self.encryptedSessionKey = self.rsaCipher.encrypt(sessionKey)
+        publicKeyFile.close()
         return
 
     def getEncryptedAESKey(self):
+        self.encryptedSessionKey = rsaCipher.encrypt(sessionKey)
         return self.encryptedSessionKey
 
-    def encrypt(self, plainText):
+    def encrypt(self, plainBytes):
+        """
+        This function is expected to get the bytes not the text itself
+        """
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC)
-        byteText = Padding.pad(plainText.encode(), 16)
+        byteText = Padding.pad(plainText, 16)
         cipherText = aesCipher.encrypt(byteText)
-        return cipherText, aesCipher.iv
+        return cipherBytes, aesCipher.iv
 
-    def decrypt(self, cipherText, iv):
+    def decrypt(self, cipherBytes, iv):
+        """
+        This returns the plainBytes not the string itself
+        """
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC, iv=iv)
-        plainText = Padding.unpad(aesCipher.decrypt(cipherText),16).decode()
-        return plainText
+        plainBytes = Padding.unpad(aesCipher.decrypt(cipherText),16)
+        return plainBytes
 

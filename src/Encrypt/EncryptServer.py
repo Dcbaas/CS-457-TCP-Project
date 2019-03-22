@@ -12,8 +12,6 @@ class EncryptServer:
         self.privKey = RSA.importKey(privFile.read())
         self.pubKey = RSA.importKey(pubFile.read())
 
-        self.sessionKey = None
-
         pubFile.close()
         privFile.close()
         return
@@ -23,21 +21,18 @@ class EncryptServer:
         Will always use the private key of the server
         """
         rsaCipher = PKCS1_OAEP.new(privKey)
-        self.sessionKey = rsaCipher.decrypt(cipherText)
-        return
+        return rsaCipher.decrypt(cipherText)
 
-    def encrypt(self, plainText):
+    def encrypt(self, plainText, key):
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC)
         byteText = Padding.pad(plainText.encode(), 16)
         cipherText = aesCipher.encrypt(byteText)
         return cipherText, aesCipher.iv
 
-
-    def decrypt(self, cipherText, iv):
+    def decrypt(self, cipherText, key, iv):
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC, iv=iv)
         plainText = Padding.unpad(aesCipher.decrypt(cipherText),16).decode()
         return plainText
-
 
     def getPublicKey():
         return self.pubKey

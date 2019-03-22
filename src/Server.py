@@ -3,13 +3,14 @@ import sys
 import socket
 import select
 
-from Encrypt.EncryptServer import EncryptServer
 
 class Server:
     def __init__(self, portNum = 8008):
         self.socketList = []
         self.socketIpMapping = {}
         self.socketUserMapping = {}
+        self.socketKeyMapping = {}
+        self.unKeyedSockets = []
         self.users = []
 
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,7 +41,7 @@ class Server:
                 # A new connection established adding it to the list of sockets
                 (clientSocket, clientAddress) = self.serversocket.accept()
                 self.socketList.append(clientSocket)
-                self.socketIpMapping.update({clientAddress: clientSocket})
+                self.unKeyedSockets.append(clientSocket)
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
                     line = line.strip()
@@ -54,42 +55,44 @@ class Server:
             else:
                 for socket in readyToRead:
                     print('Incoming Message')
-                    messgBuffer = []
+                    packet = []
 
                     #source username (16 + dest. username (16) + 255 char messg  + 2 ':' = 287
-                    messgBuffer = socket.recv(289)
+                    #add 16 bytes for padding I guess
+                    packet = socket.recv(310)
 
                     #Did the client close the connection? 
-                    if self.manageSocket(socket, messgBuffer):
+                    if self.manageSocket(socket, packet):
                         continue
 
-                    messgBuffer = messgBuffer.decode()
+                    #TODO Change this to use the deycryption
+                    message = packet.decode()
 
-                    if self.addUser(messgBuffer, socket):
+                    if self.addUser(message, socket):
                         print('User added')
                         continue
 
-                    listReturn = self.listRequest(messgBuffer)
+                    listReturn = self.listRequest(message)
                     if listReturn != None:
                         print(listReturn)
                         socket.send(listReturn.encode())
                         continue
 
-                    mssgSrc,mssgDest,text = self.splitPacket(messgBuffer)
+                    mssgSrc,mssgDest,text = self.splitPacket(message)
 
                     if mssgDest == 'allchat':
                         #Broadcast to all but stdin and the sending socket
                         for dest in readyToWrite:
                             if not dest == sys.stdin or dest == socket or dest == self.serversocket:
-                                dest.send(messgBuffer.encode())
+                                dest.send(message.encode())
 
                     else:
                         if mssgDest in self.socketUserMapping:
                             destSocket = self.socketUserMapping[mssgDest]
-                            destSocket.send(messgBuffer.encode())
+                            destSocket.send(message.encode())
                         else:
-                            messgBuffer = 'Server:error:The person you are trying to contact is not connected to the server'
-                            socket.send(messgBuffer.encode())
+                            message = 'Server:error:The person you are trying to contact is not connected to the server'
+                            socket.send(message.encode())
                             #Send an error cause it didn't exist
                             continue
 
