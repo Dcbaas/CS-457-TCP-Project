@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-from ChatApp import Server
+from Server import Server
 
 portNum = 8008
 if len(sys.argv) == 2:

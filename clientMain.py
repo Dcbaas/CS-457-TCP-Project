@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ChatApp import Client
+from Client import Client
 import sys
 
 ipAddress = 'localhost'

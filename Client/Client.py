@@ -2,10 +2,10 @@ import socket
 import select
 import sys
 
-from Encrypt.EncryptClient import EncryptClient
-
+from Client import EncryptClient
 class Client:
-    def __init__(self, ipAddress, portNum = 8008, username = ''):
+    def __init__(self, ipAddress, portNum = 8008, username = '', testing = False):
+        self.ENCODED_SPACE = ''.encode()
         self.username = username
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -13,16 +13,13 @@ class Client:
         except Exception as err:
             print("No connection found on host %s at port %s." % (ipAddress, portNum))
             self.clientSocket.close()
-            exit()
-
-        usermessage = str('username:' + self.username)
-        self.clientSocket.send(usermessage.encode())
 
         self.inputList = []
         self.inputList.append(self.clientSocket)
         self.inputList.append(sys.stdin)
 
-        self.activeUsers = []
+        self.cryptoBackend = EncryptClient()
+        self.doHandshake()
         return
 
     def runClient(self):
@@ -31,10 +28,9 @@ class Client:
                      select.select(self.inputList, self.inputList, self.inputList)
 
             if self.clientSocket in readyToRead:
-                message = self.clientSocket.recv(289)
-                self.manageClient(message)
-                message = message.decode()
-                self.handleMessage(message)
+                rawPacket = self.clientSocket.recv(289)
+                self.manageClient(rawPacket)
+                self.handleMessage(rawPacket)
 
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
@@ -43,7 +39,21 @@ class Client:
                     break
                 sys.stdout.flush()
 
-    def handleMessage(self, packet):
+    def doHandshake(self):
+        #Send the AES key
+        rsaEncryptedAES = self.cryptoBackend.getEncryptedAESKey()
+        print(rsaEncryptedAES)
+        self.clientSocket.send(rsaEncryptedAES)
+
+        usermessage = str('username:' + self.username)
+        packet, iv = self.cryptoBackend.encrypt(usermessage.encode())
+        self.clientSocket.send(bytes(iv + self.ENCODED_SPACE + packet))
+
+    def handleMessage(self, rawPacket):
+        splitPacket = rawPacket.split(self.ENCODED_SPACE)
+
+        #The message is the cipher text decrypted and decoded back into a string
+        packet = self.cryptoBackend.decrypt(splitPacket[1], splitPacketp[0]).decode()
         source, dest, message = self.splitPacket(packet)
 
         if dest == 'list':
@@ -96,10 +106,10 @@ class Client:
 
         if len(packet) <= 289:
 
-            self.clientSocket.send(packet.encode())
+            packet, iv = self.cryptoBackend.encrypt(packet.encode)
+            self.clientSocket.send(bytes(iv + self.ENCODED_SPACE + packet))
         else:
             print('Message too long')
-
         return
 
     def splitPacket(self, packet):
