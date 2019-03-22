@@ -5,7 +5,7 @@ from Crypto.Util import Padding
 
 class EncryptClient:
     def __init__(self):
-        publicKeyFile = open('RSApub.pem')
+        publicKeyFile = open('./RSApub.pem')
         self.sessionKey = get_random_bytes(32)
 
         self.publicKey = RSA.importKey(publicKeyFile.read())
@@ -14,7 +14,7 @@ class EncryptClient:
         return
 
     def getEncryptedAESKey(self):
-        self.encryptedSessionKey = rsaCipher.encrypt(sessionKey)
+        self.encryptedSessionKey = self.rsaCipher.encrypt(self.sessionKey)
         return self.encryptedSessionKey
 
     def encrypt(self, plainBytes):

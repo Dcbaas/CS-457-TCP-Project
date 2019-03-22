@@ -2,8 +2,7 @@ import socket
 import select
 import sys
 
-from Encrypt.EncryptClient import EncryptClient
-
+from Client import EncryptClient
 class Client:
     def __init__(self, ipAddress, portNum = 8008, username = '', testing = False):
         self.ENCODED_SPACE = ''.encode()
@@ -43,6 +42,7 @@ class Client:
     def doHandshake(self):
         #Send the AES key
         rsaEncryptedAES = self.cryptoBackend.getEncryptedAESKey()
+        print(rsaEncryptedAES)
         self.clientSocket.send(rsaEncryptedAES)
 
         usermessage = str('username:' + self.username)

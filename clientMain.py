@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from src import Client
+from Client import Client
 import sys
 
 ipAddress = 'localhost'
