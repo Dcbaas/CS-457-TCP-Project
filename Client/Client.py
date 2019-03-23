@@ -2,10 +2,8 @@ import socket
 import select
 import sys
 
-from Client import EncryptClient
 class Client:
-    def __init__(self, ipAddress, portNum = 8008, username = '', testing = False):
-        self.ENCODED_SPACE = ''.encode()
+    def __init__(self, ipAddress, portNum = 8008, username = ''):
         self.username = username
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -15,7 +13,8 @@ class Client:
             self.clientSocket.close()
             exit()
 
-        self.encrypter = EncryptClient()
+        if self.username == '':
+            self.username = input("Enter your username: ")
 
         usermessage = str('username:' + self.username)
         self.clientSocket.send(usermessage.encode())
@@ -24,6 +23,7 @@ class Client:
         self.inputList.append(self.clientSocket)
         self.inputList.append(sys.stdin)
 
+        self.activeUsers = []
         return
 
     def runClient(self):
@@ -32,9 +32,10 @@ class Client:
                      select.select(self.inputList, self.inputList, self.inputList)
 
             if self.clientSocket in readyToRead:
-                rawPacket = self.clientSocket.recv(289)
-                self.manageClient(rawPacket)
-                self.handleMessage(rawPacket)
+                message = self.clientSocket.recv(289)
+                self.manageClient(message)
+                message = message.decode()
+                self.handleMessage(message)
 
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
@@ -42,33 +43,8 @@ class Client:
                     self.sendMessage(line)
                     break
                 sys.stdout.flush()
-    def runHandshake(self):
-        """
-        The handshake sets sends the server the AES key and the username it will be using while 
-        connected.
-        """
-        #Send the AES key
-        self.clientSocket.send(encrypter.getEncryptedAESKey())
-        usermessage = str('username:' + self.username)
-        
-        cipherMessage,iv = self.encrypter.encrypt(usermessage)
-        self.clientSocket.send(bytes(cipherMessage + iv))
 
-    def doHandshake(self):
-        #Send the AES key
-        rsaEncryptedAES = self.cryptoBackend.getEncryptedAESKey()
-        print(rsaEncryptedAES)
-        self.clientSocket.send(rsaEncryptedAES)
-
-        usermessage = str('username:' + self.username)
-        packet, iv = self.cryptoBackend.encrypt(usermessage.encode())
-        self.clientSocket.send(bytes(iv + self.ENCODED_SPACE + packet))
-
-    def handleMessage(self, rawPacket):
-        splitPacket = rawPacket.split(self.ENCODED_SPACE)
-
-        #The message is the cipher text decrypted and decoded back into a string
-        packet = self.cryptoBackend.decrypt(splitPacket[1], splitPacketp[0]).decode()
+    def handleMessage(self, packet):
         source, dest, message = self.splitPacket(packet)
 
         if dest == 'list':
@@ -119,11 +95,12 @@ class Client:
         else:
             print('Not a valid command')
 
-        if len(packet) <= 289
-            packet, iv = self.cryptoBackend.encrypt(packet.encode)
-            self.clientSocket.send(bytes(iv + self.ENCODED_SPACE + packet))
+        if len(packet) <= 289:
+
+            self.clientSocket.send(packet.encode())
         else:
             print('Message too long')
+
         return
 
     def splitPacket(self, packet):
@@ -152,4 +129,5 @@ class Client:
         self.clientSocket.shutdown(socket.SHUT_RDWR)
         self.clientSocket.close()
         exit(0)
+
 
