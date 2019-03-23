@@ -17,20 +17,21 @@ class EncryptClient:
         self.encryptedSessionKey = self.rsaCipher.encrypt(self.sessionKey)
         return self.encryptedSessionKey
 
-    def encrypt(self, plainBytes):
-        """
-        This function is expected to get the bytes not the text itself
-        """
+    def encrypt(self, plainText):
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC)
-        byteText = Padding.pad(plainText, 16)
+        byteText = Padding.pad(plainText.encode(), 16)
         cipherText = aesCipher.encrypt(byteText)
-        return cipherBytes, aesCipher.iv
+        cipherPacket = bytes(aesCipher.iv + cipherText)
+        return cipherPacket
 
-    def decrypt(self, cipherBytes, iv):
-        """
-        This returns the plainBytes not the string itself
-        """
+    def decrypt(self, cipherPacket):
+        iv, cipherText = self._splitCipherBytes(cipherPacket)
         aesCipher = AES.new(self.sessionKey, AES.MODE_CBC, iv=iv)
-        plainBytes = Padding.unpad(aesCipher.decrypt(cipherText),16)
-        return plainBytes
+        plainText = Padding.unpad(aesCipher.decrypt(cipherText),16)
+        return plainText.decode()
+    
+    def _splitCipherBytes(self, cipherPacket):
+        iv = cipherPacket[0:16]
+        cipherText = cipherPacket[16:]
+        return iv, cipherText
 
