@@ -2,12 +2,17 @@ import sys
 import sys
 import socket
 import select
+import EncryptServer
 
 class Server:
     def __init__(self, portNum = 8008):
         self.socketList = []
+        self.unKeyedSockets = []
+
         self.socketIpMapping = {}
         self.socketUserMapping = {}
+        self.socketAesKeyMapping = {}
+
         self.users = []
 
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,6 +22,8 @@ class Server:
 
         #add stdin to the list for its use
         self.socketList.append(sys.stdin)
+
+        self.encrypter = EncryptServer.EncryptServer()
         return
 
     def addUser(self, packet, socket):
@@ -36,9 +43,15 @@ class Server:
                             self.socketList)
             if self.serversocket in readyToRead:
                 # A new connection established adding it to the list of sockets
+                # We add to list of un keyed sockets to indicate that this socket hasn't sent a 
+                # key to our server yet
                 (clientSocket, clientAddress) = self.serversocket.accept()
                 self.socketList.append(clientSocket)
+                self.unKeyedSockets.append(clientSocket)
+
                 self.socketIpMapping.update({clientAddress: clientSocket})
+                print('New connection Established. Not Keyed yet')
+
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
                     line = line.strip()
@@ -51,45 +64,63 @@ class Server:
                 sys.stdout.flush()
             else:
                 for socket in readyToRead:
-                    print('Incoming Message')
-                    messgBuffer = []
-
-                    #source username (16 + dest. username (16) + 255 char messg  + 2 ':' = 287
-                    messgBuffer = socket.recv(289)
-
-                    #Did the client close the connection? 
-                    if self.manageSocket(socket, messgBuffer):
-                        continue
-
-                    messgBuffer = messgBuffer.decode()
-
-                    if self.addUser(messgBuffer, socket):
-                        print('User added')
-                        continue
-
-                    listReturn = self.listRequest(messgBuffer)
-                    if listReturn != None:
-                        print(listReturn)
-                        socket.send(listReturn.encode())
-                        continue
-
-                    mssgSrc,mssgDest,text = self.splitPacket(messgBuffer)
-
-                    if mssgDest == 'allchat':
-                        #Broadcast to all but stdin and the sending socket
-                        for dest in readyToWrite:
-                            if not dest == sys.stdin or dest == socket or dest == self.serversocket:
-                                dest.send(messgBuffer.encode())
-
+                    if socket in self.unKeyedSockets:
+                        print('Message from unkeyed socket')
+                        # Get the key and add it to the socket key mapping
+                        rawKey = socket.recv(256)
+                        key = self.encrypter.rsaDecrypt(rawKey)
+                        self.socketAesKeyMapping.update({socket:key})
+                        self.unKeyedSockets.remove(socket)
                     else:
-                        if mssgDest in self.socketUserMapping:
-                            destSocket = self.socketUserMapping[mssgDest]
-                            destSocket.send(messgBuffer.encode())
-                        else:
-                            messgBuffer = 'Server:error:The person you are trying to contact is not connected to the server'
-                            socket.send(messgBuffer.encode())
-                            #Send an error cause it didn't exist
+                        print('Incoming Message')
+                        cipherPacket = []
+
+                        #source username (16 + dest. username (16) + 255 char messg  + 2 ':' = 287
+                        cipherPacket = socket.recv(305)
+
+                        #Did the client close the connection? 
+                        if self.manageSocket(socket, cipherPacket):
                             continue
+
+                        #The client didn't close. Handle the packet
+                        sourceKey = self.socketAesKeyMapping[socket]
+                        plainPacket = self.encrypter.decrypt(cipherPacket,sourceKey)
+
+                        if self.addUser(plainPacket, socket):
+                            print('User added')
+                            continue
+
+                        listReturn = self.listRequest(plainPacket)
+                        if listReturn != None:
+                            print(listReturn)
+                            cipherPacket = self.encrypter.encrypt(listReturn, sourceKey)
+                            socket.send(cipherPacket)
+                            continue
+
+                        mssgSrc,mssgDest,text = self.splitPacket(plainPacket)
+
+                        if mssgDest == 'allchat':
+                            #Broadcast to all but stdin and the sending socket
+                            print(plainPacket)
+                            for dest in readyToWrite:
+                                if not(dest == sys.stdin or dest == socket or dest == self.serversocket):
+                                    destinationKey = self.socketAesKeyMapping[dest]
+                                    cipherPacket = self.encrypter.encrypt(plainPacket, destinationKey)
+                                    dest.send(cipherPacket)
+
+                        else:
+                            if mssgDest in self.socketUserMapping:
+                                destSocket = self.socketUserMapping[mssgDest]
+                                destinationKey = self.socketAesKeyMapping[destSocket]
+
+                                cipherPacket = self.encrypter.encrypt(plainPacket,destinationKey)
+                                destSocket.send(cipherPacket)
+                            else:
+                                plainPacket = 'Server:error:The person you are trying to contact is not connected to the server'
+                                cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                                socket.send(cipherPacket)
+                                #Send an error cause it didn't exist
+                                continue
 
     def splitPacket(self, packet):
         message = packet.split(':')
