@@ -13,13 +13,17 @@ class Client:
         except Exception as err:
             print("No connection found on host %s at port %s." % (ipAddress, portNum))
             self.clientSocket.close()
+            exit()
+
+        self.encrypter = EncryptClient()
+
+        usermessage = str('username:' + self.username)
+        self.clientSocket.send(usermessage.encode())
 
         self.inputList = []
         self.inputList.append(self.clientSocket)
         self.inputList.append(sys.stdin)
 
-        self.cryptoBackend = EncryptClient()
-        self.doHandshake()
         return
 
     def runClient(self):
@@ -38,6 +42,17 @@ class Client:
                     self.sendMessage(line)
                     break
                 sys.stdout.flush()
+    def runHandshake(self):
+        """
+        The handshake sets sends the server the AES key and the username it will be using while 
+        connected.
+        """
+        #Send the AES key
+        self.clientSocket.send(encrypter.getEncryptedAESKey())
+        usermessage = str('username:' + self.username)
+        
+        cipherMessage,iv = self.encrypter.encrypt(usermessage)
+        self.clientSocket.send(bytes(cipherMessage + iv))
 
     def doHandshake(self):
         #Send the AES key
@@ -104,8 +119,7 @@ class Client:
         else:
             print('Not a valid command')
 
-        if len(packet) <= 289:
-
+        if len(packet) <= 289
             packet, iv = self.cryptoBackend.encrypt(packet.encode)
             self.clientSocket.send(bytes(iv + self.ENCODED_SPACE + packet))
         else:
