@@ -1,8 +1,7 @@
 import socket
 import select
 import sys
-import EncryptClient
-
+import Encrypt.EncryptClient
 class Client:
     def __init__(self, ipAddress, portNum = 8008, username = ''):
         self.username = username

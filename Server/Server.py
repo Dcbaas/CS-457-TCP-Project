@@ -2,7 +2,7 @@ import sys
 import sys
 import socket
 import select
-import EncryptServer
+import Encypt.EncyptServer
 
 class Server:
     def __init__(self, portNum = 8008):
