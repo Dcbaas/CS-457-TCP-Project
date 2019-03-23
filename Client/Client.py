@@ -14,20 +14,13 @@ class Client:
             self.clientSocket.close()
             exit()
 
-        ##NEVER USING CONSIDER REMOVAL
-        if self.username == '':
-            self.username = input("Enter your username: ")
-        ###################################################
-
-        self.sendHandshake()
-
         self.inputList = []
         self.inputList.append(self.clientSocket)
         self.inputList.append(sys.stdin)
 
         self.activeUsers = []
-
         self.encrypter = EncryptClient.EncryptClient()
+        self.sendHandshake()
         return
 
     def runClient(self):
@@ -37,8 +30,8 @@ class Client:
 
             if self.clientSocket in readyToRead:
                 packet = self.clientSocket.recv(289)
-                self.manageClient(message)
-                self.handleMessage(message)
+                self.manageClient(packet)
+                self.handleMessage(packet)
 
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
@@ -49,7 +42,7 @@ class Client:
 
     def handleMessage(self, packet):
 
-        plainText = encrypter.decrypt(packet)
+        plainText = self.encrypter.decrypt(packet)
 
         source, dest, message = self.splitPacket(plainText)
 
@@ -104,7 +97,7 @@ class Client:
             print('Not a valid command')
 
         if len(plainPacket) <= 289:
-            cipherPacket = encrypter.encrypt(plainPacket)
+            cipherPacket = self.encrypter.encrypt(plainPacket)
             self.clientSocket.send(cipherPacket)
         else:
             print('Message too long')
@@ -133,11 +126,11 @@ class Client:
         """
         The handshake involves sending an encrypted aes key and the username of this client
         """
-        encryptedKey = encrypter.getEncryptedAESKey()
+        encryptedKey = self.encrypter.getEncryptedAESKey()
         self.clientSocket.send(encryptedKey)
 
         usermessage = str('username:' + self.username)
-        encryptedUserMessage = encrypter.encrypt(usermessage)
+        encryptedUserMessage = self.encrypter.encrypt(usermessage)
         self.clientSocket.send(encryptedUserMessage)
         return
 

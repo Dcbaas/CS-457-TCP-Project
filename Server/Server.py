@@ -50,6 +50,7 @@ class Server:
                 self.unKeyedSockets.append(clientSocket)
 
                 self.socketIpMapping.update({clientAddress: clientSocket})
+                print('New connection Established. Not Keyed yet')
 
             elif sys.stdin in readyToRead:
                 for line in sys.stdin:
@@ -63,12 +64,13 @@ class Server:
                 sys.stdout.flush()
             else:
                 for socket in readyToRead:
-                    if socket in unKeyedSockets:
+                    if socket in self.unKeyedSockets:
+                        print('Message from unkeyed socket')
                         # Get the key and add it to the socket key mapping
                         rawKey = socket.recv(256)
-                        key = encrypter.rsaDecrypt(rawKey)
-                        self.socketAesKeyMapping.update(socket:key)
-
+                        key = self.encrypter.rsaDecrypt(rawKey)
+                        self.socketAesKeyMapping.update({socket:key})
+                        self.unKeyedSockets.remove(socket)
                     else:
                         print('Incoming Message')
                         cipherPacket = []
@@ -81,8 +83,8 @@ class Server:
                             continue
 
                         #The client didn't close. Handle the packet
-                        sourceKey = socketAesKeyMapping[socket]
-                        plainPacket = encrypter.decrypt(cipherPacket,sourceKey)
+                        sourceKey = self.socketAesKeyMapping[socket]
+                        plainPacket = self.encrypter.decrypt(cipherPacket,sourceKey)
 
                         if self.addUser(plainPacket, socket):
                             print('User added')
@@ -91,7 +93,7 @@ class Server:
                         listReturn = self.listRequest(plainPacket)
                         if listReturn != None:
                             print(listReturn)
-                            cipherPacket = encrypter.encrypt(listReturn, sourceKey)
+                            cipherPacket = self.encrypter.encrypt(listReturn, sourceKey)
                             socket.send(cipherPacket)
                             continue
 
@@ -99,22 +101,23 @@ class Server:
 
                         if mssgDest == 'allchat':
                             #Broadcast to all but stdin and the sending socket
+                            print(plainPacket)
                             for dest in readyToWrite:
                                 if not(dest == sys.stdin or dest == socket or dest == self.serversocket):
-                                    destinationKey = socketAesKeyMapping[dest]
-                                    cipherPacket = encrypter.encrypt(plainPacket, destinationKey)
+                                    destinationKey = self.socketAesKeyMapping[dest]
+                                    cipherPacket = self.encrypter.encrypt(plainPacket, destinationKey)
                                     dest.send(cipherPacket)
 
                         else:
                             if mssgDest in self.socketUserMapping:
                                 destSocket = self.socketUserMapping[mssgDest]
-                                destinationKey = socketAesKeyMapping[destSocket]
+                                destinationKey = self.socketAesKeyMapping[destSocket]
 
-                                cipherPacket = encrypter.encrypt(plainPacket)
-                                destSocket.send(cipherPacket.encode())
+                                cipherPacket = self.encrypter.encrypt(plainPacket,destinationKey)
+                                destSocket.send(cipherPacket)
                             else:
                                 plainPacket = 'Server:error:The person you are trying to contact is not connected to the server'
-                                cipherPacket = encrypter.encrypt(plainPacket, sourceKey)
+                                cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
                                 socket.send(cipherPacket)
                                 #Send an error cause it didn't exist
                                 continue
