@@ -95,6 +95,7 @@ class Client:
 
         else:
             print('Not a valid command')
+            return
 
         if len(plainPacket) <= 289:
             cipherPacket = self.encrypter.encrypt(plainPacket)
