@@ -131,7 +131,7 @@ class Server:
 
     def listRequest(self, packet):
         data = packet.split(':', 1)
-        print(data)
+        #print(data)
         if data[1] == 'list':
             returnList ='Server:' + 'list:' + ''.join(str(user + ':') for user in self.users)
             print(returnList)

@@ -26,7 +26,7 @@ class EncryptServer:
         aesCipher = AES.new(key, AES.MODE_CBC)
         byteText = Padding.pad(plainText.encode(), 16)
         cipherText = aesCipher.encrypt(byteText)
-        print(cipherText)
+        #print(cipherText)
 
         cipherPacket = (aesCipher.iv + cipherText)
         return cipherPacket
