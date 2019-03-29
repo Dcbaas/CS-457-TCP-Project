@@ -5,7 +5,7 @@ import select
 import EncryptServer
 
 class Server:
-    def __init__(self, portNum = 8008):
+    def __init__(self, portNum = 8008, adminPassword = 'password'):
         self.socketList = []
         self.unKeyedSockets = []
 
@@ -14,6 +14,8 @@ class Server:
         self.socketAesKeyMapping = {}
 
         self.users = []
+        self.adminUsers = []
+        self.silencedUsers = []
 
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind(('', portNum))
@@ -24,6 +26,7 @@ class Server:
         self.socketList.append(sys.stdin)
 
         self.encrypter = EncryptServer.EncryptServer()
+        self.adminPassword = adminPassword
         return
 
     def addUser(self, packet, socket):
@@ -98,8 +101,72 @@ class Server:
                             continue
 
                         mssgSrc,mssgDest,text = self.splitPacket(plainPacket)
+                        
+                        if mssgDest == 'admin':
+                            print('Admin was called')
+                            print(text)
+                            if text == self.adminPassword:
+                                self.adminUsers.append(mssgSrc)
+                                plainPacket = 'Server:message:You are now an admin'
+                                cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                                socket.send(cipherPacket)
+                            else:
 
-                        if mssgDest == 'allchat':
+                                plainPacket = 'Server:error:Incorrect Password'
+                                cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                                socket.send(cipherPacket)
+                            continue
+
+                        if mssgDest == 'kick':
+                            if mssgSrc in self.adminUsers:
+                                if text in self.socketUserMapping:
+                                    kickedSocket = self.socketUserMapping[text]
+                                    kickMessage = 'Server:error:You have been kicked.'
+                                    kickedKey = self.socketAesKeyMapping[kickedSocket]
+                                    cipherPacket = self.encrypter.encrypt(kickMessage, kickedKey)
+                                    kickedSocket.send(cipherPacket)
+                                    self.shutdownSocket(kickedSocket)
+
+                                    self.users.remove(text)
+                                    self.socketList.remove(kickedSocket)
+                                    if text in self.adminUsers:
+                                        self.adminUsers.remove(text)
+                                    if text in self.silencedUsers:
+                                        self.silencedUsers.remove(text)
+
+                                    plainPacket = 'Server:message:You have kicked ' + text + ' from the server'
+                                    cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                                    socket.send(cipherPacket)
+                                else:
+                                    plainPacket = 'Server:error:This is not the user you are looking for'
+                                    cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                                    socket.send(cipherPacket)
+                            else:
+                                plainPacket = 'Server:error:You are not an admin'
+                                cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                                socket.send(cipherPacket)
+                            continue
+
+                        if mssgDest == 'silence':
+                            if mssgSrc in self.adminUsers:
+                                if text in self.socketUserMapping:
+                                    self.silencedUsers.append(text)
+                                    silencedSocket = self.socketUserMapping[text]
+                                    silenceMessage = 'Server:error:YOU SHALL NOT SPAKE'
+                                    silenceKey = self.socketAesKeyMapping[silencedSocket]
+                                    cipherPacket = self.encrypter.encrypt(silenceMessage,silenceKey)
+                                    silencedSocket.send(cipherPacket)
+
+                                    plainPacket = 'Server:message: They have been silenced'
+                                else:
+                                    plainPacket = 'Server:error:The user doesn\'t exit'
+                            else:
+                                plainPacket = 'Server:error:You are not an admin'
+
+                            cipherPacket = self.encrypter.encrypt(plainPacket,sourceKey)
+                            socket.send(cipherPacket)
+                            continue
+                        if mssgDest == 'allchat' and not self.isSilenced(socket):
                             #Broadcast to all but stdin and the sending socket
                             print(plainPacket)
                             for dest in readyToWrite:
@@ -109,7 +176,13 @@ class Server:
                                     dest.send(cipherPacket)
 
                         else:
-                            if mssgDest in self.socketUserMapping:
+                            if self.isSilenced(socket):
+                                plainPacket = 'Server:error:You are a silenced user and cannot speak'
+                                cipherPacket =  self.encrypter.encrypt(plainPacket, sourceKey)
+                                socket.send(cipherPacket)
+
+                            elif mssgDest in self.socketUserMapping:
+                                print('Got here')
                                 destSocket = self.socketUserMapping[mssgDest]
                                 destinationKey = self.socketAesKeyMapping[destSocket]
 
@@ -168,5 +241,10 @@ class Server:
                 continue
             else:
                 socket.close()
-
+    def isSilenced(self,socket):
+        for key, value in self.socketUserMapping.items():
+            if value == socket:
+                if key in self.silencedUsers:
+                    return True
+        return False
 

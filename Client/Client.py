@@ -2,6 +2,7 @@ import socket
 import select
 import sys
 import EncryptClient
+import getpass
 
 class Client:
     def __init__(self, ipAddress, portNum = 8008, username = ''):
@@ -69,6 +70,7 @@ class Client:
         Prints a standard message to the screen. If its a public message, the print statement marks
         the message as such.
         '''
+        print(message)
         if dest == 'allchat':
             print(str(source + ' (Public):' + message))
         else:
@@ -92,6 +94,15 @@ class Client:
 
         elif detail[0] == '!quit':
             self.quitProgram()
+
+        elif detail[0] == '!admin':
+            plainPacket = self.constructPacket('admin',self.enterPassword())
+ 
+        elif detail[0]  == '!kick':
+            plainPacket = self.constructPacket('kick', detail[1])
+
+        elif detail[0] == '!silence':
+            plainPacket = self.constructPacket('silence', detail[1])
 
         else:
             print('Not a valid command')
@@ -134,4 +145,7 @@ class Client:
         encryptedUserMessage = self.encrypter.encrypt(usermessage)
         self.clientSocket.send(encryptedUserMessage)
         return
+
+    def enterPassword(self):
+        return getpass.getpass()
 
