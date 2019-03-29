@@ -106,15 +106,13 @@ class Server:
                             print('Admin was called')
                             print(text)
                             if text == self.adminPassword:
-                                print('Success input')
                                 self.adminUsers.append(mssgSrc)
-                                plainText = 'Server:message:You are now an admin'
+                                plainPacket = 'Server:message:You are now an admin'
                                 cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
-                                print(plainText)
                                 socket.send(cipherPacket)
                             else:
 
-                                plainText = 'Server:error:Incorrect Password'
+                                plainPacket = 'Server:error:Incorrect Password'
                                 cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
                                 socket.send(cipherPacket)
                             continue
