@@ -72,6 +72,8 @@ class Server:
                     elif line == '!quit':
                         [self.shutdownSocket(currentSocket) for currentSocket in self.socketList]
                         exit(0)
+                    else:
+                        print('Not a valid server command. Some commands are admin user only')
                     break;
                 sys.stdout.flush()
             else:
@@ -132,9 +134,7 @@ class Server:
 
                         if mssgDest == 'kick':
                             if mssgSrc in self.adminUsers:
-                                print(text)
                                 if text in self.socketUserMapping:
-                                    print(self.socketUserMapping[text])
                                     kickedSocket = self.socketUserMapping[text]
                                     kickMessage = 'Server:error:You have been kicked.'
                                     kickedKey = self.socketAesKeyMapping[kickedSocket]
