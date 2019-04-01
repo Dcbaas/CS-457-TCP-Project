@@ -32,9 +32,18 @@ class Server:
     def addUser(self, packet, socket):
         data = packet.split(':', 1)
         if data[0] == 'username':
-            self.users.append(data[1])
-            self.socketUserMapping.update({data[1]: socket})
-            return True
+            if data[1] not in self.users:
+                self.users.append(data[1])
+                self.socketUserMapping.update({data[1]: socket})
+                return True
+            else:
+                plainPacket = 'Sever:error:The username ' + data[1] + ' is alreay in use.'
+                sourceKey = self.socketAesKeyMapping[socket]
+                cipherPacket = self.encrypter.encrypt(plainPacket, sourceKey)
+                socket.send(cipherPacket)
+                self.shutdownSocket(socket)
+                self.socketList.remove(socket)
+                return None
         return False
 
     def runServer(self): 
@@ -89,8 +98,12 @@ class Server:
                         sourceKey = self.socketAesKeyMapping[socket]
                         plainPacket = self.encrypter.decrypt(cipherPacket,sourceKey)
 
-                        if self.addUser(plainPacket, socket):
-                            print('User added')
+                        addedUser = self.addUser(plainPacket, socket)
+                        if addedUser == True:
+                            print('User Added')
+                            continue
+                        elif addedUser == None:
+                            print('Duplicate User attempt failed')
                             continue
 
                         listReturn = self.listRequest(plainPacket)
@@ -101,7 +114,7 @@ class Server:
                             continue
 
                         mssgSrc,mssgDest,text = self.splitPacket(plainPacket)
-                        
+
                         if mssgDest == 'admin':
                             print('Admin was called')
                             print(text)
@@ -119,7 +132,9 @@ class Server:
 
                         if mssgDest == 'kick':
                             if mssgSrc in self.adminUsers:
+                                print(text)
                                 if text in self.socketUserMapping:
+                                    print(self.socketUserMapping[text])
                                     kickedSocket = self.socketUserMapping[text]
                                     kickMessage = 'Server:error:You have been kicked.'
                                     kickedKey = self.socketAesKeyMapping[kickedSocket]
@@ -127,6 +142,7 @@ class Server:
                                     kickedSocket.send(cipherPacket)
                                     self.shutdownSocket(kickedSocket)
 
+                                    del self.socketUserMapping[text]
                                     self.users.remove(text)
                                     self.socketList.remove(kickedSocket)
                                     if text in self.adminUsers:
@@ -149,7 +165,7 @@ class Server:
 
                         if mssgDest == 'silence':
                             if mssgSrc in self.adminUsers:
-                                if text in self.socketUserMapping:
+                                if text in self.socketUserMapping and text not in self.silencedUsers:
                                     self.silencedUsers.append(text)
                                     silencedSocket = self.socketUserMapping[text]
                                     silenceMessage = 'Server:error:YOU SHALL NOT SPAKE'
@@ -158,6 +174,9 @@ class Server:
                                     silencedSocket.send(cipherPacket)
 
                                     plainPacket = 'Server:message: They have been silenced'
+                                elif text in self.silencedUsers:
+                                    plainPacket = 'Server:error:This person is already silenced'
+
                                 else:
                                     plainPacket = 'Server:error:The user doesn\'t exit'
                             else:

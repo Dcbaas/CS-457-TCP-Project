@@ -70,7 +70,6 @@ class Client:
         Prints a standard message to the screen. If its a public message, the print statement marks
         the message as such.
         '''
-        print(message)
         if dest == 'allchat':
             print(str(source + ' (Public):' + message))
         else:
